@@ -1,0 +1,17 @@
+---
+# vars file for rbenv
+
+rbenv_bash_profile: 
+  - keyword: '### for rbenv managed by Ansible.'
+
+  - keyword: '# env RBENV_ROOT'
+    regexp: '^export RBENV_ROOT='
+    line: 'export RBENV_ROOT=${HOME}/.rbenv'
+
+  - keyword: '# env PATH to rbenv'
+    regexp: '^export PATH='
+    line: 'export PATH=${RBENV_ROOT}/bin:${PATH}'
+
+  - keyword: '# init rbenv'
+    regexp: '^eval "\$\( rbenv init'
+    line: 'eval "$( rbenv init - )"'

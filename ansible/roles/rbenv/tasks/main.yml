@@ -3,13 +3,13 @@
 
 - name: 'install dependency via yum'
   yum:
-    name: "{{ item.value }}"
+    name: "{{ item }}"
     state: 'latest'
     update_cache: yes
     allow_downgrade: yes
     disable_gpg_check: no
     validate_certs: yes
-  with_dict: "{{ rbenv_dependency }}"
+  with_items: "{{ rbenv_dependency }}"
   become: yes
 
 - name: 'create opt directory'
@@ -18,28 +18,62 @@
     state: 'directory'
     follow: yes
   become: yes
-  become_user: "{{ rbenv_user.name }}"
+  become_user: "{{ rbenv_user }}"
 
-- name: 'install rbenv'
+- name: 'create tmp directory'
+  file:
+    path: '${HOME}/tmp'
+    state: 'directory'
+    follow: yes
+  become: yes
+  become_user: "{{ rbenv_user }}"
+
+
+- name: 'install archives'
   block:
+  - name: 'get archives'
+    get_url:
+      url: "{{ item.src }}"
+      dest: "${HOME}/tmp/{{ item.name }}-{{ item.src | basename }}"
+      backup: no
+      force: yes
+      # checksum: "{{ item.checksum }}"
+      timeout: 30
+      validate_certs: yes
+    changed_when: false
+    with_items: "{{ rbenv_archives }}"
+
   - name: 'extract archives'
     unarchive:
-      src: "{{ item.value }}"
-      dest: '${HOME}/opt'
+      src: "${HOME}/tmp/{{ item.name }}-{{ item.src | basename }}"
+      dest: "${HOME}/opt"
       remote_src: yes
-      keep_newer: yes
-      validate_certs: yes
-    with_dict: "{{ rbenv_archives }}"
+      keep_newer: no
+    with_items: "{{ rbenv_archives }}"
     ignore_errors: "{{ ansible_check_mode }}"
 
+  - name: 'delete archives'
+    file:
+      path: "${HOME}/tmp/{{ item.name }}-{{ item.src | basename }}"
+      state: 'absent'
+      follow: yes
+    changed_when: false
+    with_items: "{{ rbenv_archives }}"
+
+  become: yes
+  become_user: "{{ rbenv_user }}"
+
+
+- name: 'setup rbenv with ruby-build'
+  block:
   - name: 'create simlink to current version'
     file:
-      src: "${HOME}/opt/{{ item.value | regex_replace( '^[^/]+://github\\.com/[^/]+/([^/]+)/archive/v([^/]+)\\.tar\\.gz$', '\\1-\\2' ) }}"
-      path: "${HOME}/opt/{{ item.value | regex_replace( '^[^/]+://github\\.com/[^/]+/([^/]+)/archive/v[^/]+\\.tar\\.gz$', '\\1' ) }}"
+      src: "${HOME}/opt/{{ item.src | regex_replace( '^[^/]+://github\\.com/[^/]+/([^/]+)/archive/v([^/]+)\\.tar\\.gz$', '\\1-\\2' ) }}"
+      path: "${HOME}/opt/{{ item.name }}"
       state: 'link'
       follow: yes
       force: yes
-    with_dict: "{{ rbenv_archives }}"
+    with_items: "{{ rbenv_archives }}"
 
   - name: 'create plugins directory'
     file:
@@ -64,44 +98,31 @@
       force: yes
 
   become: yes
-  become_user: "{{ rbenv_user.name }}"
+  become_user: "{{ rbenv_user }}"
 
-- name: 'manage .bash_profile'
+
+- name: 'setup .bash_profile'
   block:
-  - name: 'add rbenv keyword to .bash_profile'
+  - name: 'add keywords to .bash_profile'
     lineinfile:
       path: '${HOME}/.bash_profile'
       state: present
       create: yes
       validate: '/bin/bash %s'
       insertafter: EOF
-      line: "{{ rbenv_bash_profile_keyword }}"
+      line: "{{ item.keyword }}"
+    with_items: "{{ rbenv_bash_profile }}"
 
-  - name: 'add RBENV_ROOT to .bash_profile'
+  - name: 'add commands to .bash_profile'
     lineinfile:
       path: '${HOME}/.bash_profile'
       state: present
       validate: '/bin/bash %s'
-      insertafter: "{{ rbenv_bash_profile_keyword | regex_escape() }}"
-      regexp: '^export RBENV_ROOT='
-      line: 'export RBENV_ROOT=${HOME}/.rbenv'
-
-  - name: 'add PATH for rbenv to .bash_profile'
-    lineinfile:
-      path: '${HOME}/.bash_profile'
-      state: present
-      validate: '/bin/bash %s'
-      insertafter: '^export RBENV_ROOT='
-      regexp: '^export PATH='
-      line: 'export PATH=${RBENV_ROOT}/bin:${PATH}'
-
-  - name: 'add rbenv init to .bash_profile'
-    lineinfile:
-      path: '${HOME}/.bash_profile'
-      state: present
-      validate: '/bin/bash %s'
-      insertafter: '^export PATH='
-      line: 'eval "$( rbenv init - )"'
+      insertafter: "{{ item.keyword | regex_escape() }}"
+      regexp: "{{ item.regexp | default( '.*' ) }}"
+      line: "{{ item.line }}"
+    when: 'item.line is defined'
+    with_items: "{{ rbenv_bash_profile }}"
 
   become: yes
-  become_user: "{{ rbenv_user.name }}"
+  become_user: "{{ rbenv_user }}"
