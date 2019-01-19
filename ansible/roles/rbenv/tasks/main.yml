@@ -1,0 +1,107 @@
+---
+# tasks file for rbenv
+
+- name: 'install dependency via yum'
+  yum:
+    name: "{{ item.value }}"
+    state: 'latest'
+    update_cache: yes
+    allow_downgrade: yes
+    disable_gpg_check: no
+    validate_certs: yes
+  with_dict: "{{ rbenv_dependency }}"
+  become: yes
+
+- name: 'create opt directory'
+  file:
+    path: '${HOME}/opt'
+    state: 'directory'
+    follow: yes
+  become: yes
+  become_user: "{{ rbenv_user.name }}"
+
+- name: 'install rbenv'
+  block:
+  - name: 'extract archives'
+    unarchive:
+      src: "{{ item.value }}"
+      dest: '${HOME}/opt'
+      remote_src: yes
+      keep_newer: yes
+      validate_certs: yes
+    with_dict: "{{ rbenv_archives }}"
+    ignore_errors: "{{ ansible_check_mode }}"
+
+  - name: 'create simlink to current version'
+    file:
+      src: "${HOME}/opt/{{ item.value | regex_replace( '^[^/]+://github\\.com/[^/]+/([^/]+)/archive/v([^/]+)\\.tar\\.gz$', '\\1-\\2' ) }}"
+      path: "${HOME}/opt/{{ item.value | regex_replace( '^[^/]+://github\\.com/[^/]+/([^/]+)/archive/v[^/]+\\.tar\\.gz$', '\\1' ) }}"
+      state: 'link'
+      follow: yes
+      force: yes
+    with_dict: "{{ rbenv_archives }}"
+
+  - name: 'create plugins directory'
+    file:
+      path: '${HOME}/opt/rbenv/plugins'
+      state: 'directory'
+      follow: yes
+
+  - name: 'create simlink to ruby-build'
+    file:
+      src: '${HOME}/opt/ruby-build'
+      path: '${HOME}/opt/rbenv/plugins/ruby-build'
+      state: 'link'
+      follow: yes
+      force: yes
+
+  - name: 'create simlink to rbenv'
+    file:
+      src: '${HOME}/opt/rbenv'
+      path: '${HOME}/.rbenv'
+      state: 'link'
+      follow: yes
+      force: yes
+
+  become: yes
+  become_user: "{{ rbenv_user.name }}"
+
+- name: 'manage .bash_profile'
+  block:
+  - name: 'add rbenv keyword to .bash_profile'
+    lineinfile:
+      path: '${HOME}/.bash_profile'
+      state: present
+      create: yes
+      validate: '/bin/bash %s'
+      insertafter: EOF
+      line: "{{ rbenv_bash_profile_keyword }}"
+
+  - name: 'add RBENV_ROOT to .bash_profile'
+    lineinfile:
+      path: '${HOME}/.bash_profile'
+      state: present
+      validate: '/bin/bash %s'
+      insertafter: "{{ rbenv_bash_profile_keyword | regex_escape() }}"
+      regexp: '^export RBENV_ROOT='
+      line: 'export RBENV_ROOT=${HOME}/.rbenv'
+
+  - name: 'add PATH for rbenv to .bash_profile'
+    lineinfile:
+      path: '${HOME}/.bash_profile'
+      state: present
+      validate: '/bin/bash %s'
+      insertafter: '^export RBENV_ROOT='
+      regexp: '^export PATH='
+      line: 'export PATH=${RBENV_ROOT}/bin:${PATH}'
+
+  - name: 'add rbenv init to .bash_profile'
+    lineinfile:
+      path: '${HOME}/.bash_profile'
+      state: present
+      validate: '/bin/bash %s'
+      insertafter: '^export PATH='
+      line: 'eval "$( rbenv init - )"'
+
+  become: yes
+  become_user: "{{ rbenv_user.name }}"
