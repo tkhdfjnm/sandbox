@@ -9,7 +9,7 @@ rbenv_archives:
   - name: 'ruby-build'
     src: 'https://github.com/rbenv/ruby-build/archive/v20181225.tar.gz'
 
-rbenv_dependency:
+rbenv_dependency_yum:
   - 'gcc-4.4.7-23.el6.x86_64'
   # - 'bzip2-1.0.5-7.el6_0.x86_64'
   - 'openssl-devel-1.0.1e-57.el6.x86_64'
@@ -19,3 +19,16 @@ rbenv_dependency:
   # - 'zlib-devel-1.2.3-29.el6.x86_64'
   # - 'gdbm-devel-1.8.0-39.el6.x86_64'
   # - 'ncurses-devel-5.7-4.20090207.el6.x86_64'
+
+rbenv_dependency_apt:
+  # - 'autoconf'
+  # - 'bison'
+  # - 'build-essential'
+  - 'libssl-dev'
+  # - 'libyaml-dev'
+  # - 'libreadline-dev' # libreadline6-dev required in official.
+  # - 'zlib1g-dev'
+  # - 'libncurses5-dev'
+  # - 'libffi-dev'
+  # - 'libgdbm5'
+  # - 'libgdbm-dev'

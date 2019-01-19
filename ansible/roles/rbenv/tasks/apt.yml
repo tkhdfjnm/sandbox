@@ -1,0 +1,10 @@
+
+- name: 'install dependency via apt'
+  apt:
+    name: "{{ item }}"
+    state: latest
+    update_cache: yes
+    only_upgrade: no
+  with_items: "{{ rbenv_dependency_apt }}"
+  ignore_errors: "{{ ansible_check_mode }}"
+  become: yes

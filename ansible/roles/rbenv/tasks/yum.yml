@@ -1,0 +1,11 @@
+
+- name: 'install dependency via yum'
+  yum:
+    name: "{{ item }}"
+    state: 'latest'
+    update_cache: yes
+    allow_downgrade: yes
+    disable_gpg_check: no
+    validate_certs: yes
+  with_items: "{{ rbenv_dependency_yum }}"
+  become: yes

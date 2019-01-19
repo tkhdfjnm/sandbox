@@ -1,16 +1,15 @@
 ---
 # tasks file for rbenv
 
-- name: 'install dependency via yum'
-  yum:
-    name: "{{ item }}"
-    state: 'latest'
-    update_cache: yes
-    allow_downgrade: yes
-    disable_gpg_check: no
-    validate_certs: yes
-  with_items: "{{ rbenv_dependency }}"
-  become: yes
+- name: 'use yum if package manager is yum'
+  include: './yum.yml'
+  when: ansible_pkg_mgr == 'yum'
+  static: no
+
+- name: 'use apt if package manager is apt'
+  include: './apt.yml'
+  when: ansible_pkg_mgr == 'apt'
+  static: no
 
 - name: 'create opt directory'
   file:
