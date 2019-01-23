@@ -21,13 +21,15 @@ rbenv_dependency_yum:
   # - 'ncurses-devel-5.7-4.20090207.el6.x86_64'
 
 rbenv_dependency_apt:
+  - 'gcc' # gcc-6 required in official.
+  - 'make'
   # - 'autoconf'
   # - 'bison'
   # - 'build-essential'
   - 'libssl-dev'
   # - 'libyaml-dev'
-  # - 'libreadline-dev' # libreadline6-dev required in official.
-  # - 'zlib1g-dev'
+  - 'libreadline-dev' # libreadline6-dev required in official.
+  - 'zlib1g-dev'
   # - 'libncurses5-dev'
   # - 'libffi-dev'
   # - 'libgdbm5'

@@ -6,5 +6,6 @@
     update_cache: yes
     only_upgrade: no
   with_items: "{{ rbenv_dependency_apt }}"
+  when: rbenv_dependency_apt is defined
   ignore_errors: "{{ ansible_check_mode }}"
   become: yes

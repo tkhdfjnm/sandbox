@@ -8,4 +8,5 @@
     disable_gpg_check: no
     validate_certs: yes
   with_items: "{{ rbenv_dependency_yum }}"
+  when: rbenv_dependency_yum is defined
   become: yes
